@@ -156,6 +156,7 @@ class Generator(nn.Module):
         # Calculate psi_hat parameters
         P = self.projection.unsqueeze(0)
         P = P.expand(e.shape[0], P.shape[1], P.shape[2])
+        
         psi_hat = torch.bmm(P, e.unsqueeze(2)).squeeze(2)
 
         # Encode
@@ -222,7 +223,7 @@ class Discriminator(nn.Module):
 
         self.pooling = nn.AdaptiveMaxPool2d((1, 1))
 
-        #self.W = nn.Parameter(torch.rand(512, training_videos).normal_(0.0, 0.02))
+#         self.W = nn.Parameter(torch.rand(512, training_videos).normal_(0.0, 0.02))
         self.w_0 = nn.Parameter(torch.rand(512, 1).normal_(0.0, 0.02))
         self.b = nn.Parameter(torch.rand(1).normal_(0.0, 0.02))
 
@@ -259,7 +260,7 @@ class Discriminator(nn.Module):
         # Calculate Realism Score
         _out = out.transpose(1, 2)
         e_hat = e_hat.unsqueeze(-1)
-        #W_i = (self.W[:, i].unsqueeze(-1)).transpose(0, 1)
+        #_W_i = (self.W[:, i].unsqueeze(-1)).transpose(0, 1)
         #out = torch.bmm(_out, _W_i + self.w_0) + self.b
         out = torch.bmm(_out, e_hat + self.w_0) + self.b
         out = torch.sigmoid(out)

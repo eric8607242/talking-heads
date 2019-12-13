@@ -2,12 +2,14 @@ import argparse
 import logging
 import os
 import sys
+import cv2
+import numpy as np
 from datetime import datetime
 
 import torch
 from PIL import Image
 from torch.nn import DataParallel
-from torch.optim import Adam
+from torch.optim import Adam, SGD
 from torchvision import transforms
 from torch.utils.data import DataLoader
 
@@ -42,10 +44,12 @@ def meta_train(gpu, dataset_path, continue_id):
         transform=transforms.Compose([
             transforms.Resize(config.IMAGE_SIZE),
             transforms.CenterCrop(config.IMAGE_SIZE),
+            #transforms.RandomHorizontalFlip(p=0.5), 
+            #transforms.RandomResizedCrop(config.IMAGE_SIZE,scale=(0.7,1.2),ratio=(0.75,1.2),interpolation=2), 
             transforms.ToTensor(),
         ])
     )
-    dataset = DataLoader(raw_dataset, batch_size=config.BATCH_SIZE, shuffle=True)
+    dataset = DataLoader(raw_dataset, batch_size=config.BATCH_SIZE, shuffle=True, num_workers=0)
 
     # endregion
 
@@ -62,7 +66,7 @@ def meta_train(gpu, dataset_path, continue_id):
         params=list(E.parameters()) + list(G.parameters()),
         lr=config.LEARNING_RATE_E_G
     )
-    optimizer_D = Adam(
+    optimizer_D = SGD(
         params=D.parameters(),
         lr=config.LEARNING_RATE_D
     )
@@ -122,6 +126,9 @@ def meta_train(gpu, dataset_path, continue_id):
 
             optimizer_E_G.step()
             optimizer_D.step()
+            
+#             for p in D.parameters():
+#                 p.data.clamp_(-0.1, 0.1)
 
             # Optimize D again
             e_hat = e_hat.detach()
@@ -133,6 +140,9 @@ def meta_train(gpu, dataset_path, continue_id):
             loss_D = criterion_D(r_x, r_x_hat)
             loss_D.backward()
             optimizer_D.step()
+            
+#             for p in D.parameters():
+#                 p.data.clamp_(-0.1, 0.1)
 
             batch_end = datetime.now()
 
@@ -149,6 +159,10 @@ def meta_train(gpu, dataset_path, continue_id):
             # region SAVE ----------------------------------------------------------------------------------------------
             save_image(os.path.join(config.GENERATED_DIR, f'last_result_x.png'), x_t[0])
             save_image(os.path.join(config.GENERATED_DIR, f'last_result_x_hat.png'), x_hat[0])
+
+            if (batch_num + 1) % 10 == 0:
+                logging.info("Image, Landmark Saving !")
+                save_image_lm(x_t[0], y_t[0])
 
             if (batch_num + 1) % 100 == 0:
                 save_image(os.path.join(config.GENERATED_DIR, f'{datetime.now():%Y%m%d_%H%M%S%f}_x.png'), x_t[0])
@@ -173,6 +187,18 @@ def meta_train(gpu, dataset_path, continue_id):
 
 
 # endregion
+
+def save_image_lm(image, landmark):
+    image = image.clone().detach().cpu()
+    img = (image.numpy().transpose(1, 2, 0) * 255.0).clip(0, 255).astype("uint8")
+    img = Image.fromarray(img)
+    img.save("image.png")
+
+    landmark = landmark.clone().detach().cpu()
+    img = (landmark.numpy().transpose(1, 2, 0) * 255.0).clip(0, 255).astype("uint8")
+    img = Image.fromarray(img)
+    img.save("lm.png")
+
 
 # region Model Manipulation
 def save_model(model, gpu, time_for_name=None):
@@ -206,9 +232,9 @@ def load_model(model, continue_id):
     if filename[0] == "D":
         model_state_dict = model.state_dict()
         #state_dict["W"] = model_state_dict["W"]
-        del state_dict["W"]
-        state_dict["w_0"] = model_state_dict["w_0"]
-        state_dict["b"] = model_state_dict["b"]
+        #del state_dict["W"]
+        #state_dict["w_0"] = model_state_dict["w_0"]
+        #state_dict["b"] = model_state_dict["b"]
 
     
     model.load_state_dict(state_dict)
