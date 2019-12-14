@@ -109,6 +109,8 @@ def init_pool(face_alignment, output):
     _FA = face_alignment
     global _OUT_DIR
     _OUT_DIR = output
+    global _COUNTER
+    _COUNTER = 0
 
 
 def process_video_folder(video, frame_rate=1):
@@ -129,10 +131,11 @@ def process_video_folder(video, frame_rate=1):
             save_video(
                 frames=frames_9,
 #                 video_id=os.path.basename(os.path.normpath(folder)),
-                video_id = folder+str(i),
+                video_id = str(_COUNTER),
                 path=_OUT_DIR,
                 face_alignment=_FA
             )
+            _COUNTER += 1
     except Exception as e:
         logging.error(f'Video {os.path.basename(os.path.normpath(folder))} could not be processed:\n{e}')
 
