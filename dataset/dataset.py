@@ -61,7 +61,7 @@ def preprocess_dataset(source, output, device='cpu', size=0, overwrite=False, fr
     # pool = Pool(processes=4, initializer=init_pool, initargs=(fa, output))
     # pool.map(process_video_folder, video_list)
 
-    init_pool(fa, output)
+    init_pool(fa, output, 0)
     counter = 1
     for v in video_list:
         start_time = datetime.now()
@@ -104,14 +104,17 @@ def get_video_list(source, size, output, overwrite=True):
     return video_list
 
 
-def init_pool(face_alignment, output):
+def init_pool(face_alignment, output, counter):
     global _FA
     _FA = face_alignment
     global _OUT_DIR
     _OUT_DIR = output
     global _COUNTER
-    _COUNTER = 0
-
+    _COUNTER = counter
+    
+def set_counter(value):
+    global _COUNTER
+    _COUNTER = value
 
 def process_video_folder(video, frame_rate=1):
     """
@@ -135,7 +138,7 @@ def process_video_folder(video, frame_rate=1):
                 path=_OUT_DIR,
                 face_alignment=_FA
             )
-            _COUNTER += 1
+            set_counter(_COUNTER+1)
     except Exception as e:
         logging.error(f'Video {os.path.basename(os.path.normpath(folder))} could not be processed:\n{e}')
 
