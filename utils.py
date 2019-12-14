@@ -273,14 +273,14 @@ def generate_e_vector(model, save_path, fa, device, image=None, video_path=None)
             lms.append(lm)
             images.append(image)
             
-    elif video is not None:
+    elif video_path is not None:
         lms, images, _ = video_to_lm(video_path, device, fa)
     else:
         print("No video and image input")
         raise
         
     embedding = []
-    for lm, image in zip(lms, images):
+    for lm, image in zip(lms[:8], images[:8]):
         x = PIL.Image.fromarray(image, 'RGB')
         y = plot_landmarks(image, lm)
         x, y = _transform(x, y)

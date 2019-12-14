@@ -129,7 +129,7 @@ def process_video_folder(video, frame_rate=1):
             save_video(
                 frames=frames_9,
 #                 video_id=os.path.basename(os.path.normpath(folder)),
-                video_id = str(i),
+                video_id = folder+str(i),
                 path=_OUT_DIR,
                 face_alignment=_FA
             )
@@ -158,18 +158,19 @@ def extract_frames(video, frame_rate=1):
     cap = cv2.VideoCapture(video)
 
     n_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+#     w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+#     h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-    frames = np.empty((n_frames, h, w, 3), np.dtype('uint8'))
+    frames = np.empty((n_frames, 256, 256, 3), np.dtype('uint8'))
 
     ret, img = cap.read()
     fn = 0
     while fn < n_frames and ret:
+        img = cv2.resize(img, (256, 256))
         frames[fn] = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         fn += 1
-        for i in range(frame_rate):
-            ret, img = cap.read()
+#         for i in range(5):
+        ret, img = cap.read()
 
     cap.release()
     return frames
